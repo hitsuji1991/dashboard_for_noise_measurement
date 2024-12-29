@@ -1,17 +1,15 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Chart from "react-apexcharts";
-import { useAuthenticator } from '@aws-amplify/ui-react';
+import { useAuthenticator, Button, Heading, View } from '@aws-amplify/ui-react';
 
-interface AppProps {}
-interface AppState {
+interface ChartData {
   options: any;
   series: any;
 }
 
-class App extends React.Component<AppProps, AppState> {
-  private timer: NodeJS.Timeout | null = null;
-
-  state: AppState = {
+const App: React.FC = () => {
+  const { user, signOut } = useAuthenticator((context) => [context.user]);
+  const [chartData, setChartData] = useState<ChartData>({
     options: {
       chart: {
         id: "realtime-noise-chart",
@@ -52,69 +50,56 @@ class App extends React.Component<AppProps, AppState> {
       name: 'Noise Level',
       data: []
     }]
-  };
+  });
 
-  componentDidMount() {
-    this.startDataGeneration();
-  }
-
-  componentWillUnmount() {
-    this.stopDataGeneration();
-  }
-
-  startDataGeneration = () => {
-    this.timer = setInterval(() => {
-      this.generateNoiseData();
+  useEffect(() => {
+    const timer = setInterval(() => {
+      generateNoiseData();
     }, 10000); // Generate data every 10 seconds
-  }
 
-  stopDataGeneration = () => {
-    if (this.timer) {
-      clearInterval(this.timer);
-    }
-  }
+    return () => clearInterval(timer);
+  }, []);
 
-  generateNoiseData = () => {
-    const { series } = this.state;
+  const generateNoiseData = () => {
     const newData = {
       x: new Date().getTime(),
       y: Math.floor(Math.random() * 50) + 30 // Random noise level between 30 and 80 dB
     };
 
-    const updatedSeries = [{
-      ...series[0],
-      data: [...series[0].data, newData]
-    }];
+    setChartData(prevState => {
+      const updatedSeries = [{
+        ...prevState.series[0],
+        data: [...prevState.series[0].data, newData]
+      }];
 
-    // Keep only the last 30 data points (5 minutes of data)
-    if (updatedSeries[0].data.length > 30) {
-      updatedSeries[0].data.shift();
-    }
+      // Keep only the last 30 data points (5 minutes of data)
+      if (updatedSeries[0].data.length > 30) {
+        updatedSeries[0].data.shift();
+      }
 
-    this.setState({ series: updatedSeries });
+      return { ...prevState, series: updatedSeries };
+    });
+  };
+
+  if (!user) {
+    return <Heading level={3}>Please sign in to view the noise monitoring dashboard</Heading>;
   }
 
-  render() {
-    const { options, series } = this.state;
-    const { signOut } = useAuthenticator();
-    return (
-      <div className="app">
-        <div className="row">
-          <h1>Real-time Noise Level Monitoring</h1>
-          <div className="mixed-chart">
-            <Chart
-              options={options}
-              series={series}
-              type="line"
-              height={350}
-              width={700}
-            />
-          </div>
-        </div>
-        <button onClick={signOut}>Sign out</button>
-      </div>
-    );
-  }
-}
+  return (
+    <View className="app">
+      <Heading level={1}>Real-time Noise Level Monitoring</Heading>
+      <View className="mixed-chart">
+        <Chart
+          options={chartData.options}
+          series={chartData.series}
+          type="line"
+          height={350}
+          width={700}
+        />
+      </View>
+      <Button onClick={signOut}>Sign out</Button>
+    </View>
+  );
+};
 
 export default App;
