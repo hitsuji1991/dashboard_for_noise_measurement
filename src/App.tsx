@@ -1,40 +1,117 @@
-import { useEffect, useState } from "react";
-import type { Schema } from "../amplify/data/resource";
-import { generateClient } from "aws-amplify/data";
+import React from "react";
+import Chart from "react-apexcharts";
 
-const client = generateClient<Schema>();
+interface AppProps {}
+interface AppState {
+  options: any;
+  series: any;
+}
 
-function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
+class App extends React.Component<AppProps, AppState> {
+  private timer: NodeJS.Timeout | null = null;
 
-  useEffect(() => {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
-    });
-  }, []);
+  state: AppState = {
+    options: {
+      chart: {
+        id: "realtime-noise-chart",
+        animations: {
+          enabled: true,
+          easing: 'linear',
+          dynamicAnimation: {
+            speed: 1000
+          }
+        },
+        toolbar: {
+          show: false
+        },
+        zoom: {
+          enabled: false
+        }
+      },
+      xaxis: {
+        type: 'datetime',
+        range: 300000, // 5 minutes in milliseconds
+      },
+      yaxis: {
+        min: 0,
+        max: 100,
+        title: {
+          text: 'Noise Level (dB)'
+        }
+      },
+      title: {
+        text: 'Real-time Noise Level',
+        align: 'left'
+      },
+      stroke: {
+        curve: 'smooth'
+      }
+    },
+    series: [{
+      name: 'Noise Level',
+      data: []
+    }]
+  };
 
-  function createTodo() {
-    client.models.Todo.create({ content: window.prompt("Todo content") });
+  componentDidMount() {
+    this.startDataGeneration();
   }
 
-  return (
-    <main>
-      <h1>My todos</h1>
-      <button onClick={createTodo}>+ new</button>
-      <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}>{todo.content}</li>
-        ))}
-      </ul>
-      <div>
-        🥳 App successfully hosted. Try creating a new todo.
-        <br />
-        <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
-          Review next step of this tutorial.
-        </a>
+  componentWillUnmount() {
+    this.stopDataGeneration();
+  }
+
+  startDataGeneration = () => {
+    this.timer = setInterval(() => {
+      this.generateNoiseData();
+    }, 10000); // Generate data every 10 seconds
+  }
+
+  stopDataGeneration = () => {
+    if (this.timer) {
+      clearInterval(this.timer);
+    }
+  }
+
+  generateNoiseData = () => {
+    const { series } = this.state;
+    const newData = {
+      x: new Date().getTime(),
+      y: Math.floor(Math.random() * 50) + 30 // Random noise level between 30 and 80 dB
+    };
+
+    const updatedSeries = [{
+      ...series[0],
+      data: [...series[0].data, newData]
+    }];
+
+    // Keep only the last 30 data points (5 minutes of data)
+    if (updatedSeries[0].data.length > 30) {
+      updatedSeries[0].data.shift();
+    }
+
+    this.setState({ series: updatedSeries });
+  }
+
+  render() {
+    const { options, series } = this.state;
+    return (
+      <div className="app">
+        <div className="row">
+          <h1>Real-time Noise Level Monitoring</h1>
+          <div className="mixed-chart">
+            <Chart
+              options={options}
+              series={series}
+              type="line"
+              height={350}
+              width={700}
+            />
+          </div>
+        </div>
       </div>
-    </main>
-  );
+    );
+  }
 }
 
 export default App;
