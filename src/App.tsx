@@ -1,5 +1,6 @@
 import React from "react";
 import Chart from "react-apexcharts";
+import { useAuthenticator } from '@aws-amplify/ui-react';
 
 interface AppProps {}
 interface AppState {
@@ -95,6 +96,7 @@ class App extends React.Component<AppProps, AppState> {
 
   render() {
     const { options, series } = this.state;
+    const { signOut } = useAuthenticator();
     return (
       <div className="app">
         <div className="row">
@@ -109,6 +111,7 @@ class App extends React.Component<AppProps, AppState> {
             />
           </div>
         </div>
+        <button onClick={signOut}>Sign out</button>
       </div>
     );
   }
