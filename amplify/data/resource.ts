@@ -14,6 +14,21 @@ const schema = a.schema({
       noise_level : a.float(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
+  updateConnectionStatus: a.mutation()
+    .arguments({
+      device_id: a.string().required(),
+      timestamp: a.datetime().required(),
+      noise_level: a.float().required(),
+    })
+    .returns(a.ref('Timeseries'))
+    .authorization( allow => [allow.authenticated()] )
+    .handler(
+      a.handler.custom({
+        dataSource: a.ref('Timeseries'),
+        entry: './insertNoiseLevelData.js',
+      })
+    ),
+
 });
 
 export type Schema = ClientSchema<typeof schema>;
