@@ -9,10 +9,11 @@ specifies that any user authenticated via an API key can "create", "read",
 const schema = a.schema({
   Timeseries: a
     .model({
-      device_id : a.string(),
-      timestamp: a.datetime(),
-      noise_level : a.float(),
+      device_id : a.string().required(),
+      timestamp: a.datetime().required(),
+      noise_level : a.float().required(),
     })
+    .identifier(['device_id'])
     .authorization((allow) => [allow.publicApiKey()]),
   insertNoiseLevelData: a.mutation()
     .arguments({
