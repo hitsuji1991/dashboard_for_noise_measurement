@@ -13,7 +13,7 @@ const schema = a.schema({
       timestamp: a.datetime().required(),
       noise_level : a.float().required(),
     })
-    .identifier(['device_id'])
+    .identifier(['device_id','timestamp'])
     .authorization((allow) => [allow.publicApiKey()]),
   insertNoiseLevelData: a.mutation()
     .arguments({
